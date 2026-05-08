@@ -79,15 +79,21 @@ Return exactly:
 }`;
 
   try{
-    const res=await fetch('/.netlify/functions/analyze',{
+    const GEMINI_KEY='AIzaSyDWloGin9Rr9TjZ2z76OiTDa5VJt2rymOU';
+    const GEMINI_URL='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+GEMINI_KEY;
+    const res=await fetch(GEMINI_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({resumeText:ftxt})
+      body:JSON.stringify({
+        contents:[{parts:[{text:p}]}],
+        generationConfig:{temperature:0.4,maxOutputTokens:1000}
+      })
     });
-    if(!res.ok) throw new Error('Server error: '+res.status);
+    if(!res.ok){const err=await res.json();throw new Error(err.error?.message||'API error: '+res.status);}
     const data=await res.json();
-    if(data.error)throw new Error(data.error);
-    render(data);
+    let raw=data.candidates[0].content.parts[0].text;
+    raw=raw.replace(/```json|```/g,'').trim();
+    render(JSON.parse(raw));
   }catch(e){
     document.getElementById('lw').classList.remove('on');
     document.getElementById('ucard').style.display='block';
